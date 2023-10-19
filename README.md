@@ -14,12 +14,12 @@
 
 ## 使用方法
 切换至程序根目录，使用node运行main.js.  
-`
+```
 $ node ./main.js
-`  
+```
 输入要解密的存档的level.dat所在的文件夹路径，如level.dat位于/sdcard/aaa/level.dat，那么输入  
-`
-/sdcard/aaa  
-`
+```
+/sdcard/aaa
+```
 等待完整性检测通过后，指定操作类型(当前版本仅支持被动解密)  
 最后等待解密完成，程序会输出解密存档存放目录
