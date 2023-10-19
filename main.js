@@ -11,11 +11,11 @@
 
 /* Imports */
 const fs = require('fs'),
-      fmt = require('./tFormat.js'),
+      fmt = require('./includes/tFormat.js'),
       rl = require('readline'),
       pathLib = require('path'),
-      texts = require('./text.js'),
-      XOR = require('./XOREncryptHelper.js');
+      texts = require('./includes/text.js'),
+      XOR = require('./includes/XOREncryptHelper.js');
 
 /* Folder Copy Function */
 function copyFolderSync(source, target, a){
