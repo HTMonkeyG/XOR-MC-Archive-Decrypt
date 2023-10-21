@@ -21,6 +21,18 @@ function printF(txt, arr){
   console.log(ret);
 }
 
+function hex2buf(txt){
+  if(typeof(txt) !== 'string')
+    return !1;
+  txt = txt.replace(/^(0x|0X)/, '');
+  (txt.length & 1) && (txt = '0' + txt);
+  var ret = Buffer.from(txt, 'hex');
+  if(!ret.length) return !1;
+  if(ret.length != (txt.length >> 1))
+    return !1;
+  return ret
+}
+
 function mcFmtCode(txt){
   function code2console(a){
     switch(a){
@@ -88,4 +100,5 @@ exports.rgb = rgb,
 exports.fmtDate = fmtDate,
 exports.printF = printF,
 exports.mcFmtCode = mcFmtCode,
-exports.mcFmtLog = mcFmtLog;
+exports.mcFmtLog = mcFmtLog,
+exports.hex2buf = hex2buf;
