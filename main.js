@@ -18,21 +18,30 @@ const fs = require('fs'),
       XOR = require('./includes/XOREncryptHelper.js');
 
 /* Folder Copy Function */
-function copyFolderSync(source, target, a){
-  if (!fs.existsSync(target))
+function copyFolderSync(source, target, disp){
+  if(!fs.existsSync(source))
+    return !1;
+  if(!fs.existsSync(target))
     fs.mkdirSync(target);
-  const ls = fs.readdirSync(source);
-  ls.forEach((file) => {
-    const sP = pathLib.join(source, file);
-    const tP = pathLib.join(target, file);
-    const st = fs.statSync(sP);
-    if (st.isFile()) {
-      a(sP),
-      fs.copyFileSync(sP, tP);
-    } else if (st.isDirectory()) {
-      copyFolderSync(sP, tP, a);
-    }
-  });
+  var fileList = [];
+  (function prepareList(sourcePath, targetPath, fls){
+    var ls = fs.readdirSync(sourcePath);
+    ls.forEach((file) => {
+      var sP = pathLib.join(sourcePath, file);
+      var tP = pathLib.join(targetPath, file);
+      var st = fs.statSync(sP);
+      if (st.isFile())
+        fls.push(sP);
+      else if (st.isDirectory())
+        fs.existsSync(tP) || fs.mkdirSync(tP),
+        prepareList(sP, tP, fls)
+    });
+  })(source, target, fileList);
+  fileList.forEach((file, i) => {
+    var tP = pathLib.join(target, pathLib.relative(source, file));
+    fs.copyFileSync(file, tP),
+    disp(file, fileList.length ? i / fileList.length : 0)
+  })
 }
 
 function delFolderSync(target){
@@ -50,8 +59,8 @@ function delFolderSync(target){
 }
 
 /* Welcome Text */
-console.log(texts.log.welcome);
-console.log(texts.log.tip1);
+fmt.printF(texts.log.welcome);
+fmt.printF(texts.log.tip1);
 
 var state = 0,
     path = '';
@@ -97,7 +106,7 @@ UI.on('line', function(e){
           fmt.printF(texts.log.tip1);
         break;
         case 2:
-          fmt.printF(texts.log.tip2);
+          fmt.printF(texts.log.tip3);
           state = 2;
         break;
         default:
@@ -138,7 +147,7 @@ UI.on('line', function(e){
 });
 
 function activeDecrypt(keyIn){
-  fmt.printF(texts.log.tip2)
+  fmt.printF(texts.log.tip4)
   var lPath = pathLib.join(path, 'db'),
       ls = fs.readdirSync(lPath),
       encrypted = [],
@@ -168,8 +177,9 @@ function activeDecrypt(keyIn){
   fs.existsSync(resultPath) && delFolderSync(resultPath);
   try {
     fmt.printF(texts.log.cpFile);
-    copyFolderSync(path, resultPath, (a) => {
-      fmt.printF(texts.log.cping, [ pathLib.relative(path, a) ])
+    console.log('\n');
+    copyFolderSync(path, resultPath, (a, b) => {
+      fmt.limPrgBar('§6' + a, b)
     })
 
     if(!keyIn){
@@ -197,9 +207,10 @@ function activeDecrypt(keyIn){
     } else
       key = keyIn;
 
-    encrypted.forEach((a)=>{
-      fmt.printF(texts.log.decrypting, [a]);
-
+    fmt.printF(texts.log.decrypting);
+    console.log('\n');
+    encrypted.forEach((a, b)=>{
+      fmt.limPrgBar('§6' + a, b / encrypted.length)
       var buf = XOR.decryptFile(fs.readFileSync(pathLib.join(path, 'db', a)), key);
       if(buf)
         fs.writeFileSync(pathLib.join(resultPath, 'db', a), buf);
@@ -239,12 +250,14 @@ function defaultDecrypt(){
   fs.existsSync(resultPath) && delFolderSync(resultPath);
   try {
     fmt.printF(texts.log.cpFile);
-    copyFolderSync(path, resultPath, (a) => {
-      fmt.printF(texts.log.cping, [ pathLib.relative(path, a) ])
+    console.log('\n');
+    copyFolderSync(path, resultPath, (a, b) => {
+      fmt.limPrgBar('§6' + a, b)
     })
-    encrypted.forEach((a)=>{
-      fmt.printF(texts.log.decrypting, [a]);
-
+    fmt.printF(texts.log.decrypting);
+    console.log('\n');
+    encrypted.forEach((a, b)=>{
+      fmt.limPrgBar('§6' + a, b / encrypted.length)
       var buf = XOR.decryptFile(fs.readFileSync(pathLib.join(path, 'db', a)));
       if(buf)
         fs.writeFileSync(pathLib.join(resultPath, 'db', a), buf);
