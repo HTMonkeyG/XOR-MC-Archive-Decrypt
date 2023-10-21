@@ -1,3 +1,6 @@
+const proc = require('process'),
+      rl = require('readline');
+
 function rgb(r, g, b){
   return `\x1b[38;2;${r};${g};${b};m`
 }
@@ -96,9 +99,31 @@ function fmtDate(date) {
   return ''+Y+M+D+h+m+s;
 }
 
+function limPrgBar(title, percent){
+  var txt = '', a;
+  typeof(percent) !== 'number' && (percent = 0);
+  percent > 1 && (percent = 1);
+  rl.moveCursor(proc.stdout, 0, -2)
+  if(title.length > proc.stdout.columns){
+    txt = '…' + title.slice(-proc.stdout.columns + 1)
+  } else if(title.length < proc.stdout.columns){
+    txt = title;
+    for(a = title.length;a < proc.stdout.columns;a++) txt += ' ';
+  }
+  printF(txt);
+  txt = '§9[§b';
+  for(a = 0;a < (proc.stdout.columns - 10);a++){
+    if((a / (proc.stdout.columns - 10)) < percent) txt += '=';
+    else txt += ' '
+  }
+  txt += '§9] §1' + (Math.ceil(percent * 1000) / 10).toFixed(1) + '%';
+  printF(txt)
+}
+
 exports.rgb = rgb,
 exports.fmtDate = fmtDate,
 exports.printF = printF,
 exports.mcFmtCode = mcFmtCode,
 exports.mcFmtLog = mcFmtLog,
-exports.hex2buf = hex2buf;
+exports.hex2buf = hex2buf,
+exports.limPrgBar = limPrgBar;

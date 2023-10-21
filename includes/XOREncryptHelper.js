@@ -1,4 +1,5 @@
 function checkFileIsEncrypt(buf){
+  if(!buf.length || buf.length < 4) return !1;
   if(buf.readUInt32LE && (buf.readUInt32BE(0) == 0x801D3001 || buf.readUInt32BE(0) == 0x901D3001)) return !0;
   else return !1
 }
