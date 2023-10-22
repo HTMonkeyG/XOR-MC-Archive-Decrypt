@@ -13,10 +13,8 @@ function printF(txt, arr){
   var ret = '';
   if(txt == void 0 || !txt.length) return '';
   for(var i = 0;i < txt.length;i++){
-   if(txt[i] == '\\')
-      (txt[i + 1] == void 0) ? ret += '\\' : (ret += txt[i+1], i++);
-   else if(txt[i] == '%')
-      (txt[i + 1] == void 0) ? ret += '%' : (ret += (arr[txt[i + 1]] || ''), i++); 
+    if(txt[i] == '%')
+      (txt[i + 1] != void 0 && /[0-9]+/.test(txt[i + 1])) ? (ret += (arr[txt[i + 1]] || ''), i++) : ret += '%'; 
     else
       ret += txt[i]
   }
@@ -103,13 +101,12 @@ function limPrgBar(title, percent){
   var txt = '', a;
   typeof(percent) !== 'number' && (percent = 0);
   percent > 1 && (percent = 1);
-  rl.moveCursor(proc.stdout, 0, -2)
+  rl.moveCursor(proc.stdout, 0, -2);
+  rl.clearLine(proc.stdout)
   if(title.length > proc.stdout.columns){
     txt = '…' + title.slice(-proc.stdout.columns + 1)
-  } else if(title.length < proc.stdout.columns){
+  } else
     txt = title;
-    for(a = title.length;a < proc.stdout.columns;a++) txt += ' ';
-  }
   printF(txt);
   txt = '§9[§b';
   for(a = 0;a < (proc.stdout.columns - 10);a++){
