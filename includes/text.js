@@ -25,7 +25,7 @@ var log = {
   noToEncFile: '§4未找到准备加密的文件, 存档文件夹可能损坏.\n§5本次执行结束',
   notDir: '§4目标不是文件夹, 请重试.',
   readyToEnc: '§5准备加密.',
-  targetNotExist: '§4目标不存在.',
+  targetInvalid: '§4目标不存在或不是文件夹.',
   targetPath: '§3目标目录: %0',
   test: '§2已确认目标, 正在检测完整性...',
   testFail: '§4完整性测试未通过, 请检查后再试.',

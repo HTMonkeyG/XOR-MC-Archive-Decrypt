@@ -8,20 +8,21 @@
  *
 ****************************************/
 
+"use strict";
 
 /* Imports */
 const fs = require('fs'),
   rl = require('readline'),
+  process = require('process'),
   pathLib = require('path'),
   fmt = require('./includes/tFormat.js'),
   texts = require('./includes/text.js'),
   XOR = require('./includes/XOREncryptHelper.js');
 
 /* Globals */
-var state = 0,
-  path = '';
+var path = '';
 
-var UI = rl.createInterface({
+var UI = rl.promises.createInterface({
   input: process.stdin,
   output: process.stdout,
   prompt: '\x1b[0m> ',
@@ -71,92 +72,84 @@ function delFolderSync(target) {
 
 /* Welcome Text */
 fmt.printF(texts.log.welcome);
-fmt.printF(texts.log.tip1);
 
-UI.prompt();
-
-UI.on('line', function (e) {
-  switch (state) {
-    /* Enter target path */
-    case 0:
-      path = e.trim();
-      path = pathLib.resolve('', path);
-      fmt.printF(texts.log.targetPath, [path]);
-      try {
-        if (!fs.statSync(path).isDirectory()) {
-          fmt.printF(texts.log.notDir);
-        } else {
-          fmt.printF(texts.log.test);
-          if (!integrityTest(path, function (a) {
-            fmt.printF(texts.log.missing, [a])
-          }))
-            fmt.printF(texts.log.testFail);
-          else
-            state = 1,
-              fmt.printF(texts.log.testSucc);
-        }
-      } catch (e) {
-        fmt.printF(texts.log.targetNotExist)
-      }
-      break;
-    /* Enter operation type */
-    case 1:
-      var op = e.trim();
-      op = Number(op);
-      switch (op) {
-        case 0:
-          defaultDecrypt(),
-            state = 0;
-          fmt.printF(texts.log.tip1);
-          break;
-        case 1:
-          defaultEncrypt(),
-            state = 0;
-          fmt.printF(texts.log.tip1);
-          break;
-        case 2:
-          fmt.printF(texts.log.tip3);
-          state = 2;
-          break;
-        default:
-          fmt.printF(texts.log.invalidOp);
-          break;
-      }
-      break;
-    /* Enter encryption key */
-    case 2:
-      var txt = e.trim(),
-        key = fmt.hex2buf(txt),
-        a;
-
-      if (txt.length) {
-        if (!key) {
-          fmt.printF(texts.log.invalidKey);
-          break
-        }
-
-        // Cut key into 8 bytes
-        (key.length > 8) && (key = key.subarray(-8, 0));
-        // Left align key
-        (key.length < 8) && (a = Buffer.alloc(8), key.copy(a, 8 - key.length, a.length - 8), key = a);
-
-        console.log(key)
-        activeDecrypt(key);
-        fmt.printF(texts.log.tip1);
-        state = 0;
-      } else {
-        fmt.printF(texts.log.autoKey);
-        activeDecrypt(!1);
-        fmt.printF(texts.log.tip1);
-        state = 0;
-      }
-      break;
-  }
-  UI.prompt();
-}).on('close', function () {
+UI.on('close', function () {
   fmt.printF(texts.log.exit);
   process.exit(0);
 });
+
+async function main() {
+  while (1) {
+    fmt.printF(texts.log.tip1);
+
+    path = await UI.question(UI.getPrompt());
+    path = pathLib.resolve('', path);
+
+    fmt.printF(texts.log.targetPath, [path]);
+
+    if (fs.existsSync(path) && fs.statSync(path).isDirectory()) {
+      fmt.printF(texts.log.test);
+      if (!integrityTest(path, function (a) {
+        fmt.printF(texts.log.missing, [a])
+      })) {
+        fmt.printF(texts.log.testFail);
+        continue;
+      }
+      else
+        fmt.printF(texts.log.testSucc);
+    } else {
+      fmt.printF(texts.log.targetInvalid);
+      continue;
+    }
+
+    var op = await UI.question(UI.getPrompt());
+    op = Number(op);
+
+    switch (op) {
+      case 0:
+        defaultDecrypt();
+        fmt.printF(texts.log.tip1);
+        break;
+      case 1:
+        defaultEncrypt();
+        fmt.printF(texts.log.tip1);
+        break;
+      case 2:
+        fmt.printF(texts.log.tip3);
+
+        var txt = await UI.question(UI.getPrompt())
+          , key = fmt.hex2buf(txt)
+          , a;
+
+        if (txt.length) {
+          if (!key) {
+            fmt.printF(texts.log.invalidKey);
+            break
+          }
+
+          // Cut key into 8 bytes
+          (key.length > 8) && (key = key.subarray(-8, 0));
+          // Left align key
+          (key.length < 8) && (a = Buffer.alloc(8), key.copy(a, 8 - key.length, a.length - 8), key = a);
+
+          console.log(key)
+          activeDecrypt(key);
+          fmt.printF(texts.log.tip1);
+          continue;
+        } else {
+          fmt.printF(texts.log.autoKey);
+          activeDecrypt(!1);
+          fmt.printF(texts.log.tip1);
+          continue;
+        }
+      default:
+        fmt.printF(texts.log.invalidOp);
+        break;
+    }
+  }
+}
+
+main();
 
 function activeDecrypt(keyIn) {
   var lPath = pathLib.join(path, 'db'),
