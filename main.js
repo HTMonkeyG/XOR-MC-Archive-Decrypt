@@ -108,12 +108,10 @@ async function main() {
     switch (op) {
       case 0:
         defaultDecrypt();
-        fmt.printF(texts.log.tip1);
-        break;
+        return
       case 1:
         defaultEncrypt();
-        fmt.printF(texts.log.tip1);
-        break;
+        return
       case 2:
         fmt.printF(texts.log.tip3);
 
@@ -134,13 +132,11 @@ async function main() {
 
           console.log(key)
           activeDecrypt(key);
-          fmt.printF(texts.log.tip1);
-          continue;
+          return
         } else {
           fmt.printF(texts.log.autoKey);
           activeDecrypt(!1);
-          fmt.printF(texts.log.tip1);
-          continue;
+          return
         }
       default:
         fmt.printF(texts.log.invalidOp);
@@ -256,7 +252,7 @@ function defaultEncrypt() {
   };
 
   if (!preEnc.length) {
-    fmt.printF(texts.log.noToDecFile);
+    fmt.printF(texts.log.noToEncFile);
     return
   }
   fmt.printF(texts.log.readyToEnc);

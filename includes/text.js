@@ -23,7 +23,6 @@ var log = {
   missing: '§4缺失: %0',
   noEncFile: '§4未找到加密的文件, 存档文件夹可能已解密.\n§3本次执行结束',
   noToEncFile: '§4未找到准备加密的文件, 存档文件夹可能损坏.\n§5本次执行结束',
-  notDir: '§4目标不是文件夹, 请重试.',
   readyToEnc: '§5准备加密.',
   targetInvalid: '§4目标不存在或不是文件夹.',
   targetPath: '§3目标目录: %0',
