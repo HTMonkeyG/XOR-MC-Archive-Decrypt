@@ -1,11 +1,11 @@
 {
   "name": "mcsaveencrypt",
-  "version": "1.0.0",
-  "description": "这是一个针对我的世界网易版地图加密机制开发、基于NodeJS的MC存档加密解密工具  \r ## 特性\r + 易于使用: 只需一个NodeJS运行环境，即可实现一键地图加解密操作\r + 可塑性强: 支持使用自定义密钥进行加解密\r + 可靠性高: 地图完整性检测、解密尝试后合理性检测，发现问题立即提示",
+  "version": "3.2.0",
+  "description": "一个针对我的世界网易版地图加密机制开发、基于NodeJS的MC存档加密解密工具",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "pkg": "pkg . --out-path=dist/"
+    "build": "pkg . --out-path=build/"
   },
   "author": "HTMonkeyG",
   "license": "MIT",
@@ -16,6 +16,6 @@
     "targets": [
       "node18"
     ],
-    "outputPath": "dist"
+    "outputPath": "build"
   }
 }
