@@ -49,7 +49,8 @@ function mcFmtLog(text) { var res = mcFmtCode(text); console.log(res); return re
  * @returns {String} Result
  */
 function printF(text, replace) {
-  console.log(translateF(text, replace));
+  var ret;
+  console.log(ret = translateF(text, replace));
   return ret
 }
 
@@ -60,7 +61,8 @@ function printF(text, replace) {
  * @returns {String} Result
  */
 function stdoutF(text, replace) {
-  process.stdout.write('' + translateF(text, replace));
+  var ret;
+  process.stdout.write(ret = '' + translateF(text, replace));
   return ret
 }
 

@@ -148,9 +148,10 @@ main();
  * @param {Buffer} keyIn - 给定的key
  */
 async function activeDecrypt(keyIn) {
-  var preprocess = await preprocessDir(path, 0)
+  var preprocess = await preprocessDir(path, 1)
     , encrypted = preprocess.encrypted
-    , resultPath = preprocess.dstPath;
+    , resultPath = preprocess.dstPath
+    , key = null;
 
   if (!encrypted.length) {
     printf(texts.log.noEncFile);
@@ -202,7 +203,7 @@ async function activeDecrypt(keyIn) {
     console.log('\n');
     encrypted.forEach((a, b) => {
       fmt.limPrgBar('§6' + a, b / encrypted.length);
-      var filePath = pathLib.join(path, 'db', a)
+      var filePath = pathLib.join(resultPath, 'db', a)
         , buf = XOR.decryptFile(fs.readFileSync(filePath), key);
       if (buf)
         fs.writeFileSync(filePath, buf);
@@ -246,9 +247,10 @@ async function defaultEncrypt() {
     console.log('\n');
     preEnc.forEach((a, b) => {
       fmt.limPrgBar('§6' + a, b / preEnc.length);
-      var buf = XOR.encryptFile(fs.readFileSync(pathLib.join(path, 'db', a)));
+      var filePath = pathLib.join(resultPath, 'db', a)
+        , buf = XOR.encryptFile(fs.readFileSync(filePath));
       if (buf)
-        fs.writeFileSync(pathLib.join(resultPath, 'db', a), buf);
+        fs.writeFileSync(filePath, buf);
       else
         throw new Error('Unknown Decrypt Error');
     });
@@ -264,7 +266,7 @@ async function defaultEncrypt() {
 async function defaultDecrypt() {
   printf(texts.log.tip2);
 
-  var preprocess = await preprocessDir(path, 0)
+  var preprocess = await preprocessDir(path, 1)
     , encrypted = preprocess.encrypted
     , resultPath = preprocess.dstPath;
 
@@ -330,25 +332,23 @@ function integrityTest(targetPath) {
   return pass;
 }
 
-function avalTest(tP) {
-  var ls = fs.readdirSync(tP),
-    pass = !0;
+function avalTest(targetPath) {
+  var ls = fs.readdirSync(targetPath);
 
-  if (ls.indexOf('db') == -1 || !fs.statSync(pathLib.join(tP, 'db')).isDirectory())
-    pass = !1;
+  if (ls.indexOf('db') == -1 || !fs.statSync(pathLib.join(targetPath, 'db')).isDirectory())
+    return false
   else {
-    ls = fs.readdirSync(pathLib.join(tP, 'db'));
-    for (var i = 0; i < ls.length; i++) {
-      if (/.ldb$/.test(ls[i])) {
-        var tmp = fs.readFileSync(pathLib.join(tP, 'db', ls[i]));
-        if (tmp.length < 8) pass = !1;
-        if (tmp.readBigUInt64BE(tmp.length - 8) != 0x57FB808B247547DBn) pass = !1;
-        if (!pass) break;
+    ls = fs.readdirSync(pathLib.join(targetPath, 'db'));
+    for (var file of ls) {
+      if (/.ldb$/.test(file)) {
+        var tmp = fs.readFileSync(pathLib.join(targetPath, 'db', file));
+        if (tmp.length < 8) return false;
+        if (tmp.readBigUInt64BE(tmp.length - 8) != 0x57FB808B247547DBn) return false;
       }
     }
   }
 
-  return pass;
+  return true;
 }
 
 async function preprocessDir(path, mode) {
