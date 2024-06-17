@@ -37,7 +37,7 @@ var log = {
   tip4: '§3正在进行主动解密.§r',
   tip5: '§5正在进行被动加密.§r',
   tryGetKey: '§2尝试获取密钥...§r',
-  welcome: '§3欢迎使用XOR存档加解密工具v3.0.§r'
+  welcome: '§3欢迎使用XOR存档加解密工具v3.2.3.§r'
 };
 
 exports.log = log;
