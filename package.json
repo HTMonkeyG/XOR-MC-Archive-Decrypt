@@ -1,6 +1,6 @@
 {
   "name": "mcsaveencrypt",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "一个针对我的世界网易版地图加密机制开发、基于NodeJS的MC存档加密解密工具",
   "main": "main.js",
   "scripts": {

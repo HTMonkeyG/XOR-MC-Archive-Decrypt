@@ -85,9 +85,7 @@ async function main() {
 
     if (fs.existsSync(path) && fs.statSync(path).isDirectory()) {
       printf(texts.log.test);
-      if (!integrityTest(path, function (a) {
-        printf(texts.log.missing, [a])
-      })) {
+      if (!integrityTest(path)) {
         printf(texts.log.testFail);
         continue;
       }
@@ -164,8 +162,8 @@ async function activeDecrypt(keyIn) {
     printf(texts.log.gt3EncFile, [encrypted.slice(0, 3).join(', '), encrypted.length]);
 
   printf(texts.log.createFolder);
-  // Delete the existing folder
-  fs.existsSync(resultPath) && (printf(texts.log.delExistFolder), delFolderSync(resultPath));
+  // 删除已存在文件夹
+  if (!await createTargetFolder(resultPath)) return;
   try {
     cloneFolder(path, resultPath);
 
@@ -221,6 +219,7 @@ async function activeDecrypt(keyIn) {
   }
 }
 
+/** 使用默认密钥加密文件夹 */
 async function defaultEncrypt() {
   printf(texts.log.tip5);
 
@@ -261,6 +260,7 @@ async function defaultEncrypt() {
   }
 }
 
+/** 使用默认密钥解密文件夹 */
 async function defaultDecrypt() {
   printf(texts.log.tip2);
 
@@ -304,27 +304,27 @@ async function defaultDecrypt() {
   }
 }
 
-function integrityTest(tP, missing) {
-  var ls = fs.readdirSync(tP),
+/** 检测存档完整性 */
+function integrityTest(targetPath) {
+  var ls = fs.readdirSync(targetPath),
     pass = !0;
 
-  if (ls.indexOf('level.dat') == -1)
-    pass = !1,
-      missing('level.dat');
-
-  if (ls.indexOf('db') == -1 || !fs.statSync(pathLib.join(tP, 'db')).isDirectory())
-    pass = !1,
-      missing('db/');
-  else {
-    ls = fs.readdirSync(pathLib.join(tP, 'db'));
-    var flag = 0x3;
-    for (var i = 0; i < ls.length; i++) {
-      if (/^MANIFEST-[0-9]{6}$/.test(ls[i])) flag &= 0x6;
-      if (/^CURRENT$/.test(ls[i])) flag &= 0x5;
+  if (ls.indexOf('level.dat') == -1) {
+    printf(texts.log.missing, ['level.dat']);
+    return false
+  } else if (ls.indexOf('db') == -1 || !fs.statSync(pathLib.join(targetPath, 'db')).isDirectory()) {
+    printf(texts.log.missing, ['db/']);
+    return false
+  } else {
+    ls = fs.readdirSync(pathLib.join(targetPath, 'db'));
+    var flag = 0b11;
+    for (var file of ls) {
+      if (/^MANIFEST-[0-9]{6}$/.test(file)) flag &= 0b10;
+      if (/^CURRENT$/.test(file)) flag &= 0b01;
       if (!flag) break;
     }
-    (flag & 0x1) ? (missing('db/MANIFEST-*'), pass = !1) : 0;
-    (flag & 0x2) ? (missing('db/CURRENT'), pass = !1) : 0;
+    (flag & 0x1) && (printf(texts.log.missing, ['db/MANIFEST-*']), pass = !1);
+    (flag & 0x2) && (printf(texts.log.missing, ['db/CURRENT']), pass = !1);
   }
 
   return pass;
