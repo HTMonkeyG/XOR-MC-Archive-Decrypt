@@ -75,11 +75,16 @@ printf(texts.log.welcome);
 UI.on('close', function () { printf(texts.log.exit); process.exit(0); });
 
 async function main() {
+  var argv = process.argv.slice(2), first = true;
   while (1) {
-    printf(texts.log.tip1);
+    if (!argv[0] || !first) {
+      printf(texts.log.tip1);
+      path = (await UI.question(UI.getPrompt())).trim();
+    } else
+      path = argv[0];
 
-    path = (await UI.question(UI.getPrompt())).trim();
     path = pathLib.resolve('', path);
+    first = false;
 
     printf(texts.log.targetPath, [path]);
 
@@ -88,15 +93,19 @@ async function main() {
       if (!integrityTest(path)) {
         printf(texts.log.testFail);
         continue;
-      }
-      else
-        printf(texts.log.testSucc);
+      } else
+        printf(texts.log.testSucc), printf(texts.log.selectOperation);
     } else {
       printf(texts.log.targetInvalid);
       continue;
     }
 
-    var op = await UI.question(UI.getPrompt());
+    var op;
+    if (typeof argv[1] != 'string')
+      op = await UI.question(UI.getPrompt());
+    else
+      op = argv[1];
+
     op = Number(op);
 
     switch (op) {
