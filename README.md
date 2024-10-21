@@ -34,10 +34,17 @@ $ node ./main.js
 &emsp;初始操作同上，指定操作类型后输入密钥，密钥限制为64bit；若留空则程序会根据LevelDB数据库文件结构自行尝试推导密钥.
 
 ## CLI指令参数
-&emsp;
-```node main.js [path: string] [operation: number] [key: string] [delete: string] [exit: string]```
+```
+node main.js [path: string] [operation: number] [key: string] [delete: string] [exit: string]
+```
 
 &emsp;第一个参数指定路径，第二个参数指定操作类型，第三个参数指定密钥（被动模式时忽略，主动模式时输入单个空格表示自适应），第四个参数指定是否删除已存在文件夹（接受y或者n），第五个参数若存在则软件会自动退出。
+
+&emsp;示例：
+```
+node main.js "./test" 2 " " "y" "1"
+```
+&emsp;打包的exe文件参数同上。
 
 ## 可能的报错情况
 - 出现错误：&lt;message&gt;
