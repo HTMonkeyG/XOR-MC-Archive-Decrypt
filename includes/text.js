@@ -12,7 +12,7 @@ var log = {
   encrypting: '§2正在加密...§r',
   encSucc1: '§2加密完成, 加密后存档已保存至§6%0.§r',
   error: '§4出现错误: %0',
-  exit: '\n§d正在关闭软件...§r',
+  exit: '\n§d已退出.§r',
   finish: '§l§3执行结束, 按Ctrl+C退出或按Enter继续.§r',
   foundEncFile: '§4找到已加密文件, 无法再次执行加密.§r',
   getKeyFail: '§4获取密钥失败.§r',
@@ -34,11 +34,11 @@ var log = {
   testSucc: '§2目标文件夹完整.§r',
   tip1: '§3请输入目标存档level.dat所在文件夹路径.§r',
   tip2: '§3正在进行被动解密.§r',
-  tip3: '§3请输入十六进制密钥. 若大于64bit将截取前64bit作为密钥. 自适应请留空.§r',
+  tip3: '§3请输入十六进制密钥. 若大于64bit将截取后64bit作为密钥. 自适应请留空.§r',
   tip4: '§3正在进行主动解密.§r',
   tip5: '§5正在进行被动加密.§r',
   tryGetKey: '§2尝试获取密钥...§r',
-  welcome: '§3欢迎使用XOR存档加解密工具v3.2.3.§r'
+  welcome: '§3欢迎使用XOR存档加解密工具v4.0.0.§r'
 };
 
 exports.log = log;

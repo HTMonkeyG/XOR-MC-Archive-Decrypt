@@ -10,23 +10,23 @@
 "use strict";
 
 /* 导入模块 */
-const fs = require('fs'),
-  rl = require('readline'),
-  process = require('process'),
-  pathLib = require('path'),
-  fmt = require('./includes/tFormat.js'),
-  texts = require('./includes/text.js'),
-  XOR = require('./includes/XOREncryptHelper.js');
+const fs = require('fs')
+  , rl = require('readline')
+  , ps = require('process')
+  , pl = require('path')
+  , fmt = require('./includes/tFormat.js')
+  , texts = require('./includes/text.js')
+  , XOR = require('./includes/XOREncryptHelper.js')
+  , printf = fmt.printF;
 
 /* 全局变量 */
-var path = '';
-
-var UI = rl.promises.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  prompt: '\x1b[0m> ',
-});
-const printf = fmt.printF;
+var path = ''
+  , argv = ps.argv.slice(2)
+  , UI = rl.promises.createInterface({
+    input: ps.stdin,
+    output: ps.stdout,
+    prompt: '\x1b[0m> ',
+  });
 
 /* 文件夹操作 */
 function copyFolderSync(source, target, disp) {
@@ -39,8 +39,8 @@ function copyFolderSync(source, target, disp) {
   (function prepareList(sourcePath, targetPath, fls) {
     var ls = fs.readdirSync(sourcePath);
     ls.forEach((file) => {
-      var sP = pathLib.join(sourcePath, file);
-      var tP = pathLib.join(targetPath, file);
+      var sP = pl.join(sourcePath, file);
+      var tP = pl.join(targetPath, file);
       var st = fs.statSync(sP);
       if (st.isFile())
         fls.push(sP);
@@ -50,9 +50,9 @@ function copyFolderSync(source, target, disp) {
     });
   })(source, target, fileList);
   fileList.forEach((file, i) => {
-    var tP = pathLib.join(target, pathLib.relative(source, file));
-    fs.copyFileSync(file, tP),
-      disp(pathLib.relative(tP, file), fileList.length ? i / fileList.length : 0)
+    var tP = pl.join(target, pl.relative(source, file));
+    fs.copyFileSync(file, tP);
+    disp(pl.relative(source, file), fileList.length ? i / fileList.length : 0)
   })
 }
 
@@ -60,7 +60,7 @@ function delFolderSync(target) {
   if (fs.existsSync(target)) {
     var ls = fs.readdirSync(target);
     ls.forEach((a) => {
-      var p = pathLib.join(target, a);
+      var p = pl.join(target, a);
       if (fs.statSync(p).isDirectory())
         delFolderSync(p);
       else
@@ -70,24 +70,39 @@ function delFolderSync(target) {
   }
 }
 
+function parseArgv(arg) {
+  var result = {}, next = false, name;
+  for (var a of arg) {
+    if (/^\-/.test(a.trim())) {
+      next = true, name = a.trim();
+      result[name] = '';
+      continue
+    }
+    if (next)
+      result[name] = a;
+  }
+
+  return result
+}
+
 printf(texts.log.welcome);
 
-UI.on('close', function () { printf(texts.log.exit); process.exit(0); });
+UI.on('close', function () { printf(texts.log.exit) });
 
 async function main() {
-  var argv = process.argv.slice(2), first = true;
   while (1) {
-    if (!argv[0] || !first) {
-      printf(texts.log.tip1);
-      path = (await UI.question(UI.getPrompt())).trim();
+    // 获取路径输入
+    printf(texts.log.tip1);
+    if (!argv[0]) {
+      path = await UI.question(UI.getPrompt());
     } else
-      path = argv[0];
+      path = argv[0], argv[0] = null, printf(UI.getPrompt() + path);
 
-    path = pathLib.resolve('', path);
-    first = false;
-
+    // 解析路径
+    path = pl.resolve('', path.trim());
     printf(texts.log.targetPath, [path]);
 
+    // 测试存档完整性
     if (fs.existsSync(path) && fs.statSync(path).isDirectory()) {
       printf(texts.log.test);
       if (!integrityTest(path)) {
@@ -100,40 +115,46 @@ async function main() {
       continue;
     }
 
+    // 获取操作类型
     var op;
     if (typeof argv[1] != 'string')
       op = await UI.question(UI.getPrompt());
     else
-      op = argv[1];
+      op = argv[1], argv[1] = null, printf(UI.getPrompt() + op);
+    op = Number(op.trim());
 
-    op = Number(op);
-
+    // 执行对应操作
     switch (op) {
       case 0:
         await defaultDecrypt();
-        break
+        break;
       case 1:
         await defaultEncrypt();
-        break
+        break;
       case 2:
         printf(texts.log.tip3);
 
-        var txt = await UI.question(UI.getPrompt())
+        var txt
           , key = fmt.hex2buf(txt)
           , a;
+
+        if (!argv[2])
+          txt = await UI.question(UI.getPrompt());
+        else
+          txt = argv[2].trim(), printf(UI.getPrompt() + argv[2]), argv[2] = null;
 
         if (txt.length) {
           if (!key) {
             printf(texts.log.invalidKey);
-            break
+            continue
           }
 
-          // Cut key into 8 bytes
+          // 切割末尾8字节
           (key.length > 8) && (key = key.subarray(-8, 0));
-          // Left align key
+          // 左对齐
           (key.length < 8) && (a = Buffer.alloc(8), key.copy(a, 8 - key.length, a.length - 8), key = a);
 
-          console.log(key)
+          console.log(key);
           await activeDecrypt(key);
           break
         } else {
@@ -143,10 +164,15 @@ async function main() {
         }
       default:
         printf(texts.log.invalidOp);
-        break;
+        continue;
     }
-    fmt.printF(texts.log.finish);
-    await UI.question('');
+
+    if (argv[4]) {
+      UI.question(fmt.translateF(texts.log.finish));
+      UI.close();
+      break;
+    } else
+      await UI.question(fmt.translateF(texts.log.finish));
   }
 }
 
@@ -166,14 +192,15 @@ async function activeDecrypt(keyIn) {
     printf(texts.log.noEncFile);
     return
   }
+
   if (encrypted.length <= 3)
     printf(texts.log.le3EncFile, [encrypted.join(', ')]);
   else
     printf(texts.log.gt3EncFile, [encrypted.slice(0, 3).join(', '), encrypted.length]);
 
-  printf(texts.log.createFolder);
   // 删除已存在文件夹
   if (!await createTargetFolder(resultPath)) return;
+
   try {
     cloneFolder(path, resultPath);
 
@@ -211,15 +238,15 @@ async function activeDecrypt(keyIn) {
     printf(texts.log.decrypting);
     console.log('\n');
     encrypted.forEach((a, b) => {
-      fmt.limPrgBar('§6' + a, b / encrypted.length);
-      var filePath = pathLib.join(resultPath, 'db', a)
+      fmt.limPrgBar('§6' + a, b / encrypted.length, Math.floor(ps.stdout.columns * 0.75));
+      var filePath = pl.join(resultPath, 'db', a)
         , buf = XOR.decryptFile(fs.readFileSync(filePath), key);
       if (buf)
         fs.writeFileSync(filePath, buf);
       else
         throw new Error('Unknown Decrypt Error');
     });
-    fmt.limPrgBar('§bDone.', 1);
+    fmt.limPrgBar('§bDone.', 1, Math.floor(ps.stdout.columns * 0.75));
     printf(texts.log.avalTest);
     avalTest(resultPath) ? printf(texts.log.avalTestSucc) : printf(texts.log.avalTestFail);
     printf(texts.log.decSucc1, [resultPath]);
@@ -255,15 +282,15 @@ async function defaultEncrypt() {
     printf(texts.log.encrypting);
     console.log('\n');
     preEnc.forEach((a, b) => {
-      fmt.limPrgBar('§6' + a, b / preEnc.length);
-      var filePath = pathLib.join(resultPath, 'db', a)
+      fmt.limPrgBar('§6' + a, b / preEnc.length, Math.floor(ps.stdout.columns * 0.75));
+      var filePath = pl.join(resultPath, 'db', a)
         , buf = XOR.encryptFile(fs.readFileSync(filePath));
       if (buf)
         fs.writeFileSync(filePath, buf);
       else
         throw new Error('Unknown Decrypt Error');
     });
-    fmt.limPrgBar('§bDone.', 1);
+    fmt.limPrgBar('§bDone.', 1, Math.floor(ps.stdout.columns * 0.75));
     printf(texts.log.encSucc1, [resultPath]);
   } catch (e) {
     printf(texts.log.error, [e.message]);
@@ -296,15 +323,15 @@ async function defaultDecrypt() {
 
     console.log('\n');
     encrypted.forEach((a, b) => {
-      fmt.limPrgBar('§6' + a, b / encrypted.length);
-      var filePath = pathLib.join(resultPath, 'db', a)
+      fmt.limPrgBar('§6' + a, b / encrypted.length, Math.floor(ps.stdout.columns * 0.75));
+      var filePath = pl.join(resultPath, 'db', a)
         , buf = XOR.decryptFile(fs.readFileSync(filePath));
       if (buf)
-        fs.writeFileSync(pathLib.join(resultPath, 'db', a), buf);
+        fs.writeFileSync(pl.join(resultPath, 'db', a), buf);
       else
         throw new Error('Unknown Decrypt Error');
     });
-    fmt.limPrgBar('§bDone.', 1);
+    fmt.limPrgBar('§bDone.', 1, Math.floor(ps.stdout.columns * 0.75));
 
     printf(texts.log.avalTest);
     avalTest(resultPath) ? printf(texts.log.avalTestSucc) : printf(texts.log.avalTestFail);
@@ -323,11 +350,11 @@ function integrityTest(targetPath) {
   if (ls.indexOf('level.dat') == -1) {
     printf(texts.log.missing, ['level.dat']);
     return false
-  } else if (ls.indexOf('db') == -1 || !fs.statSync(pathLib.join(targetPath, 'db')).isDirectory()) {
+  } else if (ls.indexOf('db') == -1 || !fs.statSync(pl.join(targetPath, 'db')).isDirectory()) {
     printf(texts.log.missing, ['db/']);
     return false
   } else {
-    ls = fs.readdirSync(pathLib.join(targetPath, 'db'));
+    ls = fs.readdirSync(pl.join(targetPath, 'db'));
     var flag = 0b11;
     for (var file of ls) {
       if (/^MANIFEST-[0-9]{6}$/.test(file)) flag &= 0b10;
@@ -344,13 +371,13 @@ function integrityTest(targetPath) {
 function avalTest(targetPath) {
   var ls = fs.readdirSync(targetPath);
 
-  if (ls.indexOf('db') == -1 || !fs.statSync(pathLib.join(targetPath, 'db')).isDirectory())
+  if (ls.indexOf('db') == -1 || !fs.statSync(pl.join(targetPath, 'db')).isDirectory())
     return false
   else {
-    ls = fs.readdirSync(pathLib.join(targetPath, 'db'));
+    ls = fs.readdirSync(pl.join(targetPath, 'db'));
     for (var file of ls) {
       if (/.ldb$/.test(file)) {
-        var tmp = fs.readFileSync(pathLib.join(targetPath, 'db', file));
+        var tmp = fs.readFileSync(pl.join(targetPath, 'db', file));
         if (tmp.length < 8) return false;
         if (tmp.readBigUInt64BE(tmp.length - 8) != 0x57FB808B247547DBn) return false;
       }
@@ -361,20 +388,20 @@ function avalTest(targetPath) {
 }
 
 async function preprocessDir(path, mode) {
-  var lPath = pathLib.join(path, 'db')
+  var lPath = pl.join(path, 'db')
     , ls = fs.readdirSync(lPath)
     , encrypted = []
     , decrypted = []
     , descFileName = ''
     , curFileContent = null
-    , targetPath = pathLib.join(path, '..', pathLib.basename(path) + (mode ? '_Dec' : '_Enc'));
+    , targetPath = pl.join(path, '..', pl.basename(path) + (mode ? '_Dec' : '_Enc'));
 
   printf(texts.log.scanning);
 
   for (var file of ls) {
     // Files except these wont be proccessed
     if (!/^MANIFEST-[0-9]{6}$/.test(file) && !/^CURRENT$/.test(file) && !/^[0-9]{6}.ldb$/.test(file)) continue;
-    var filePath = pathLib.join(lPath, file);
+    var filePath = pl.join(lPath, file);
     if (fs.statSync(filePath).isFile()) {
       var tempBuf = fs.readFileSync(filePath);
       XOR.checkFileIsEncrypt(tempBuf) ? encrypted.push(file) : decrypted.push(file);
@@ -395,10 +422,16 @@ async function preprocessDir(path, mode) {
 
 async function createTargetFolder(path) {
   printf(texts.log.createFolder);
-  // Delete the existing folder
+  // 删除已存在文件夹
   if (fs.existsSync(path)) {
     printf(texts.log.delExistFolder);
-    if ((await UI.question(UI.getPrompt())).trim().toLocaleLowerCase() != "y") return false;
+    if (argv[3]) {
+      printf(UI.getPrompt() + argv[3]);
+      if (argv[3].trim().toLocaleLowerCase() != "y")
+        return false;
+    } else
+      if ((await UI.question(UI.getPrompt())).trim().toLocaleLowerCase() != "y")
+        return false;
     delFolderSync(path);
     return true
   }
@@ -408,6 +441,6 @@ async function createTargetFolder(path) {
 function cloneFolder(path, resultPath) {
   printf(texts.log.cpFile);
   console.log('\n');
-  copyFolderSync(path, resultPath, (a, b) => fmt.limPrgBar('§6' + a, b));
-  fmt.limPrgBar('§bDone.', 1);
+  copyFolderSync(path, resultPath, (a, b) => fmt.limPrgBar('§6' + a, b, Math.floor(ps.stdout.columns * 0.75)));
+  fmt.limPrgBar('§bDone.', 1, Math.floor(ps.stdout.columns * 0.75));
 }
