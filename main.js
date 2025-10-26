@@ -85,6 +85,25 @@ function parseArgv(arg) {
   return result
 }
 
+function parseHexKeyInput(input) {
+  if (typeof input != 'string')
+    return null;
+  var normalized = input.trim();
+  if (!normalized.length)
+    return null;
+  var key = fmt.hex2buf(normalized);
+  if (!key || !key.length)
+    return null;
+  if (key.length > 8)
+    key = key.subarray(key.length - 8);
+  if (key.length < 8) {
+    var padded = Buffer.alloc(8);
+    key.copy(padded, 0);
+    key = padded;
+  }
+  return Buffer.from(key);
+}
+
 printf(texts.log.welcome);
 
 UI.on('close', function () { printf(texts.log.exit) });
@@ -131,37 +150,53 @@ async function main() {
       case 1:
         await defaultEncrypt();
         break;
-      case 2:
+      case 2: {
         printf(texts.log.tip3);
 
-        var txt
-          , key = fmt.hex2buf(txt)
-          , a;
-
+        var txt;
         if (!argv[2])
           txt = await UI.question(UI.getPrompt());
         else
-          txt = argv[2].trim(), printf(UI.getPrompt() + argv[2]), argv[2] = null;
+          txt = argv[2], printf(UI.getPrompt() + argv[2]), argv[2] = null;
+
+        txt = (typeof txt == 'string') ? txt.trim() : '';
 
         if (txt.length) {
+          var key = parseHexKeyInput(txt);
           if (!key) {
             printf(texts.log.invalidKey);
-            continue
+            continue;
           }
-
-          // 切割末尾8字节
-          (key.length > 8) && (key = key.subarray(-8, 0));
-          // 左对齐
-          (key.length < 8) && (a = Buffer.alloc(8), key.copy(a, 8 - key.length, a.length - 8), key = a);
-
-          console.log(key);
+          printf(texts.log.tip4);
           await activeDecrypt(key);
-          break
+          break;
         } else {
           printf(texts.log.autoKey);
+          printf(texts.log.tip4);
           await activeDecrypt(!1);
-          break
+          break;
         }
+      }
+      case 3: {
+        printf(texts.log.tip6);
+
+        var keyInput;
+        if (!argv[2])
+          keyInput = await UI.question(UI.getPrompt());
+        else
+          keyInput = argv[2], printf(UI.getPrompt() + argv[2]), argv[2] = null;
+
+        keyInput = (typeof keyInput == 'string') ? keyInput.trim() : '';
+        var encKey = parseHexKeyInput(keyInput);
+        if (!encKey) {
+          printf(texts.log.invalidKey);
+          continue;
+        }
+
+        printf(texts.log.tip7);
+        await activeEncrypt(encKey);
+        break;
+      }
       default:
         printf(texts.log.invalidOp);
         continue;
@@ -250,6 +285,46 @@ async function activeDecrypt(keyIn) {
     printf(texts.log.avalTest);
     avalTest(resultPath) ? printf(texts.log.avalTestSucc) : printf(texts.log.avalTestFail);
     printf(texts.log.decSucc1, [resultPath]);
+  } catch (e) {
+    printf(texts.log.error, [e.message]);
+    delFolderSync(resultPath)
+  }
+}
+
+/** 使用自定义密钥加密文件夹 */
+async function activeEncrypt(key) {
+  var preprocess = await preprocessDir(path, 0)
+    , preEnc = preprocess.decrypted
+    , resultPath = preprocess.dstPath;
+
+  if (preprocess.encrypted.length) {
+    printf(texts.log.foundEncFile);
+    return
+  }
+  if (!preEnc.length) {
+    printf(texts.log.noToEncFile);
+    return
+  }
+
+  printf(texts.log.readyToEnc);
+  if (!await createTargetFolder(resultPath)) return;
+
+  try {
+    cloneFolder(path, resultPath);
+
+    printf(texts.log.encrypting);
+    console.log('\n');
+    preEnc.forEach((a, b) => {
+      fmt.limPrgBar('§6' + a, b / preEnc.length, Math.floor(ps.stdout.columns * 0.75));
+      var filePath = pl.join(resultPath, 'db', a)
+        , buf = XOR.encryptFile(fs.readFileSync(filePath), key);
+      if (buf)
+        fs.writeFileSync(filePath, buf);
+      else
+        throw new Error('Unknown Encrypt Error');
+    });
+    fmt.limPrgBar('§bDone.', 1, Math.floor(ps.stdout.columns * 0.75));
+    printf(texts.log.encSucc1, [resultPath]);
   } catch (e) {
     printf(texts.log.error, [e.message]);
     delFolderSync(resultPath)
