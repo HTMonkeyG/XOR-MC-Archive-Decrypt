@@ -69,3 +69,6 @@ node main.js "./test" 2 " " "y" "1"
 - 获取密钥失败
 
 &emsp;可能为资源中心二次加密，使用与模组相同的加密算法（特点为80字节大小的CURRENT文件），目前本工具不支持解密该格式.
+
+## 其他相关项目
+- [在线解密器](https://github.com/ihaiming/NetEaseMC-Decryptor/) by [ihaiming](https://github.com/ihaiming)，适合手机端玩家等需要临时、快速加解密需求的用户。
