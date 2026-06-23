@@ -243,7 +243,7 @@ async function activeDecrypt(keyIn) {
       // 主动获取密钥
       printf(texts.log.tryGetKey);
 
-      // 使用CURRENT文件的后16字节(去除了32位魔数)
+      // 使用CURRENT文件截断前4字节(去除了32位魔数)的结果
       // 和MANIFEST文件的文件名取异或
       var buf1 = preprocess.before
         , buf2 = preprocess.after.subarray(4);
@@ -259,12 +259,15 @@ async function activeDecrypt(keyIn) {
       for (var i = 0; i < buf1.length; i++)
         buf1[i] ^= buf2[i];
 
-      // 密钥只能为8字节，共16字节的文件应该重复两次
-      if (Buffer.compare(buf1.subarray(0, 8), buf1.subarray(8))) {
-        printf(texts.log.getKeyFail);
-        delFolderSync(resultPath);
-        return
+      // 密钥只能为8字节，文件应该是以8字节为周期重复的
+      for (var i = 8; i < buf1.length; i++) {
+        if (buf1[i] != buf1[i & 0x07]) {
+          printf(texts.log.getKeyFail);
+          delFolderSync(resultPath);
+          return
+        }
       }
+
       key = buf1.subarray(0, 8);
       printf(texts.log.getKeySucc, ['0x' + key.toString('hex')])
     } else
@@ -432,7 +435,7 @@ function integrityTest(targetPath) {
     ls = fs.readdirSync(pl.join(targetPath, 'db'));
     var flag = 0b11;
     for (var file of ls) {
-      if (/^MANIFEST-[0-9]{6}$/.test(file)) flag &= 0b10;
+      if (/^MANIFEST-[0-9]{6,}$/.test(file)) flag &= 0b10;
       if (/^CURRENT$/.test(file)) flag &= 0b01;
       if (!flag) break;
     }
@@ -475,7 +478,7 @@ async function preprocessDir(path, mode) {
 
   for (var file of ls) {
     // Files except these wont be proccessed
-    if (!/^MANIFEST-[0-9]{6}$/.test(file) && !/^CURRENT$/.test(file) && !/^[0-9]{6}.ldb$/.test(file)) continue;
+    if (!/^MANIFEST-[0-9]{6,}$/.test(file) && !/^CURRENT$/.test(file) && !/^[0-9]{6,}.ldb$/.test(file)) continue;
     var filePath = pl.join(lPath, file);
     if (fs.statSync(filePath).isFile()) {
       var tempBuf = fs.readFileSync(filePath);
