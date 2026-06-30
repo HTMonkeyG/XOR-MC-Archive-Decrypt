@@ -1,15 +1,23 @@
 {
-  "name": "mcsaveencrypt",
+  "name": "@htmonkeyg/cryptmc",
   "version": "4.0.1",
   "description": "一个针对我的世界网易版地图加密机制开发、基于NodeJS的MC存档加密解密工具",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "pkg . --out-path=build/"
+    "build": "npx webpack && pkg . --out-path=build/"
   },
+  "files": [
+    "./dist",
+    "./package.json",
+    "./README.md",
+    "./LICENSE"
+  ],
   "author": "HTMonkeyG",
   "license": "MIT",
-  "bin": "./main.js",
+  "bin": {
+    "cryptmc": "dist/cli.js"
+  },
   "pkg": {
     "scripts": "build/**/*.js",
     "assets": "views/**/*",
@@ -17,5 +25,10 @@
       "node18"
     ],
     "outputPath": "build"
+  },
+  "devDependencies": {
+    "terser-webpack-plugin": "^5.6.1",
+    "webpack": "^5.108.3",
+    "webpack-cli": "^7.1.0"
   }
 }

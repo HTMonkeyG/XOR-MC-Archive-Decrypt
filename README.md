@@ -14,9 +14,16 @@
 - 主动加密: 自定义密钥进行加密，见下文
 
 ## 使用方法
-### 被动系列
+&emsp;可选择使用npm安装：
+```sh
+npm i -g @htmonkeyg/cryptmc
+```
+并执行`cryptmc`启动，<br>
+&emsp;或：
 1. 克隆仓库到本地或者下载打包好的exe文件.
 2. 切换至程序根目录，使用node运行main.js或直接执行exe文件.
+
+### 被动系列
 
 ```
 $ node ./main.js

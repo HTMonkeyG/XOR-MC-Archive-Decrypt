@@ -1,3 +1,6 @@
-dist*
-build*
-node_modules*
+dist/
+build/
+node_modules/
+
+package-lock.json
+*.tgz
