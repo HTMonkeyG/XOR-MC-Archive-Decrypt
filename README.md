@@ -1,4 +1,7 @@
 # XOR-MC-Archive-Decrypt
+> 这可是已知最早将算法从XOREncrypt.dll里面提取并开源出来的解密器！<br>
+> &emsp;&emsp;&emsp;—— HTMonkeyG
+
 &emsp;一个针对我的世界网易版地图加密机制开发、基于NodeJS的MC存档加密解密工具.
 
 ## 特性
